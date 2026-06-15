@@ -661,14 +661,64 @@ const QUESTION_BANK = {
 const QUIZ_DATA = {
   // General Knowledge — array of banks, each covers a year range.
   // Years outside any bank's range see GK as disabled.
+  // Optional `pattern` overrides the default 3+1+1 quiz pattern.
   generalKnowledge: [
-    // Placeholder for "General Knowledge years 4 to 7" — to be populated when
-    // the source file is shared. Leave bank empty for now so the UI grays it out.
-    // {
-    //   name: "General Knowledge (Years 4–7)",
-    //   yearRange: [4, 7],
-    //   bank: { one: [], two: [], three: [] }
-    // }
+    {
+      name: "General Knowledge (Years 4–7)",
+      yearRange: [4, 7],
+      pattern: { one: 7, two: 0, three: 0 },
+      bank: {
+        one: [
+          { q: "What is a portion of God's people entrusted to a Bishop called?",
+            model: "An Eparchy.",
+            keywords: [["eparchy"]] },
+          { q: "Which apostle is thought to have written the book of Revelation?",
+            model: "St. John.",
+            keywords: [["john"]] },
+          { q: "Who was the first Christian Martyr?",
+            model: "St Stephen.",
+            keywords: [["stephen"]] },
+          { q: "Who appoints a Parish Priest?",
+            model: "The Eparchial Bishop.",
+            keywords: [["eparchial"], ["bishop"]] },
+          { q: "Name the patron saint of Altar Servers.",
+            model: "St. John Berchmans.",
+            keywords: [["john"], ["berchmans"]] },
+          { q: "At which place were Jesus' disciples first called Christians?",
+            model: "In Antioch.",
+            keywords: [["antioch"]] },
+          { q: "What are the two basic sources that stand for the belief of the Catholic Church?",
+            model: "The Holy Bible and Sacred Traditions.",
+            keywords: [["bible", "holy bible", "scripture"], ["tradition", "traditions"]] },
+          { q: "Which apostle said, 'My Lord and My God'?",
+            model: "St. Thomas.",
+            keywords: [["thomas"]] },
+          { q: "When do we celebrate 'All Saints' Day' in the Syro-Malabar Church?",
+            model: "First Friday after Easter.",
+            keywords: [["first friday", "1st friday"], ["easter"]] },
+          { q: "What is known as the Pentateuch?",
+            model: "The first five books of the Old Testament.",
+            keywords: [["first five", "five books", "5 books"], ["old testament", "torah"]] },
+          { q: "What is 'Ramsha'?",
+            model: "The Evening Liturgy (at 6 PM).",
+            keywords: [["evening"], ["liturgy", "prayer"]] },
+          { q: "What is the meaning of the word 'Hosanna'?",
+            model: "Lord, deliver us.",
+            keywords: [["lord"], ["deliver", "save"]] },
+          { q: "What is the meaning of the word 'Apostle'?",
+            model: "One who is sent.",
+            keywords: [["sent", "one who is sent", "messenger"]] },
+          { q: "How many books are there in the Catholic Bible?",
+            model: "73 books (46 Old Testament and 27 New Testament).",
+            keywords: [["73", "seventy three", "seventy-three"]] },
+          { q: "What was written on the cross on which Jesus was crucified?",
+            model: "INRI — Iesus Nazarenus Rex Iudaeorum (Jesus the Nazarene, King of the Jews).",
+            keywords: [["inri"]] }
+        ],
+        two: [],
+        three: []
+      }
+    }
   ],
 
   // Prayers — array of banks, each with a year range derived from the file title
@@ -951,23 +1001,25 @@ function selectCategory(cat) {
   }
   if (cat === "gk") {
     const banks = getGKBanksForYear(selectedYear);
-    if (banks.length === 1) {
-      selectedBankSource = { label: banks[0].name || "General Knowledge", bank: banks[0].bank };
-      startQuiz();
-    } else if (banks.length > 1) {
-      // Future: a sub-picker. For now, just take the first.
-      selectedBankSource = { label: banks[0].name || "General Knowledge", bank: banks[0].bank };
+    if (banks.length >= 1) {
+      // Future: if banks.length > 1, show a sub-picker. For now, take the first.
+      selectedBankSource = {
+        label: banks[0].name || "General Knowledge",
+        bank: banks[0].bank,
+        pattern: banks[0].pattern
+      };
       startQuiz();
     }
     return;
   }
   if (cat === "prayers") {
     const banks = getPrayerBanksForYear(selectedYear);
-    if (banks.length === 1) {
-      selectedBankSource = { label: banks[0].name || "Prayers", bank: banks[0].bank };
-      startQuiz();
-    } else if (banks.length > 1) {
-      selectedBankSource = { label: banks[0].name || "Prayers", bank: banks[0].bank };
+    if (banks.length >= 1) {
+      selectedBankSource = {
+        label: banks[0].name || "Prayers",
+        bank: banks[0].bank,
+        pattern: banks[0].pattern
+      };
       startQuiz();
     }
     return;
@@ -1015,14 +1067,20 @@ function selectChapter(ch) {
 }
 
 // ===== QUIZ FLOW =====
+const DEFAULT_PATTERN = { one: 3, two: 1, three: 1 };
+
 function startQuiz() {
   if (!selectedBankSource) return;
   const bank = selectedBankSource.bank;
-  const ones   = pickRandom(bank.one   || [], Math.min(3, (bank.one   || []).length))
+  const pattern = selectedBankSource.pattern || DEFAULT_PATTERN;
+  const nOne   = pattern.one   || 0;
+  const nTwo   = pattern.two   || 0;
+  const nThree = pattern.three || 0;
+  const ones   = pickRandom(bank.one   || [], Math.min(nOne,   (bank.one   || []).length))
                    .map(q => ({...q, marks: 1, type: "one"}));
-  const twos   = pickRandom(bank.two   || [], Math.min(1, (bank.two   || []).length))
+  const twos   = pickRandom(bank.two   || [], Math.min(nTwo,   (bank.two   || []).length))
                    .map(q => ({...q, marks: 2, type: "two"}));
-  const threes = pickRandom(bank.three || [], Math.min(1, (bank.three || []).length))
+  const threes = pickRandom(bank.three || [], Math.min(nThree, (bank.three || []).length))
                    .map(q => ({...q, marks: 3, type: "three"}));
   currentQuiz = [...ones, ...twos, ...threes];
   renderQuiz();
@@ -1035,6 +1093,8 @@ function renderQuiz() {
   setSubtitle(selectedBankSource ? selectedBankSource.label : "Quiz");
 
   const backLabel = selectedCategory === "chapters" ? "Chapters" : "Categories";
+  const numQs = currentQuiz.length;
+  const totalMarks = currentQuiz.reduce((s, q) => s + q.marks, 0);
 
   let html = `<div class="card">
     <div class="nav-bar">
@@ -1042,8 +1102,8 @@ function renderQuiz() {
       <button class="home-link" onclick="goHome()">&#8962; Home</button>
     </div>
     <div class="breadcrumb">${escapeHtml(selectedBankSource ? selectedBankSource.label : "")}</div>
-    <h2 style="color:var(--primary); margin-top:0;">Quick Test — 5 Questions (Total 8 marks)</h2>
-    <p style="color:var(--muted); font-size:14px;">Answer all five questions below. You can be brief — what matters is including the key facts and names from the chapter.</p>
+    <h2 style="color:var(--primary); margin-top:0;">Quick Test — ${numQs} Question${numQs === 1 ? "" : "s"} (Total ${totalMarks} mark${totalMarks === 1 ? "" : "s"})</h2>
+    <p style="color:var(--muted); font-size:14px;">Answer all the questions below. You can be brief — what matters is including the key facts and names.</p>
   </div>`;
 
   currentQuiz.forEach((q, i) => {

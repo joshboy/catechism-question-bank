@@ -159,28 +159,151 @@
   .actions { text-align: center; margin-top: 20px; }
   .actions button { margin: 0 6px; }
   label.small { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+
+  /* Year / Category / Chapter selection screens */
+  .back-link {
+    display: inline-block;
+    color: var(--secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 0 0 12px;
+    font-weight: bold;
+  }
+  .back-link:hover { text-decoration: underline; background: none; }
+  .breadcrumb {
+    color: var(--muted);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .year-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .year-btn {
+    background: var(--card);
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    padding: 18px 8px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .year-btn:hover { background: var(--primary); color: white; }
+  .year-btn .year-num { display: block; font-size: 22px; }
+  .year-btn .year-label { display: block; font-size: 11px; font-weight: normal; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .category-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .category-card:hover:not(.disabled) {
+    border-color: var(--primary);
+    box-shadow: 0 4px 10px rgba(139,26,26,0.12);
+    transform: translateY(-2px);
+  }
+  .category-card h3 { margin: 0 0 6px; color: var(--primary); font-size: 18px; }
+  .category-card p { margin: 0; color: var(--muted); font-size: 13px; }
+  .category-card.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: #F7FAFC;
+  }
+  .category-card .badge {
+    display: inline-block;
+    background: var(--muted);
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .category-card .badge.soon { background: var(--accent); }
+  .category-card .badge.locked { background: #A0AEC0; }
+
+  .chapter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .chapter-btn {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .chapter-btn:not(.disabled):hover {
+    border-color: var(--primary);
+    background: #FDFCF7;
+  }
+  .chapter-btn .ch-num { display: block; font-weight: bold; color: var(--primary); font-size: 16px; }
+  .chapter-btn .ch-title { display: block; font-size: 12px; color: var(--text); margin-top: 4px; min-height: 2.4em; }
+  .chapter-btn.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: #F7FAFC;
+  }
+  .chapter-btn.disabled .ch-num { color: var(--muted); }
+
   .hidden { display: none; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Catechism Quick Quiz</h1>
-  <p>Lesson 8 — Jesus Who Died For Us</p>
+  <h1>Catechism Quiz</h1>
+  <p id="header-subtitle">Pick your year group to begin</p>
 </header>
 <main>
 
-<div id="start-screen" class="card intro">
-  <h2>Welcome!</h2>
-  <p>This quick test picks <strong>5 random questions</strong> from the question bank for Lesson 8:</p>
-  <ul>
-    <li><strong>3 × 1-mark</strong> questions (short factual answers)</li>
-    <li><strong>1 × 2-mark</strong> question (a sentence or two)</li>
-    <li><strong>1 × 3-mark</strong> question (a short paragraph)</li>
-  </ul>
-  <p>Type your answers in the boxes and submit. Your answers will be checked for the key facts and concepts from the chapter.</p>
-  <div class="actions">
-    <button onclick="startQuiz()">Start Quick Test</button>
-  </div>
+<div id="start-screen" class="card">
+  <div class="breadcrumb">Step 1 of 2</div>
+  <h2 style="color:var(--primary); margin-top:0;">Choose your Year Group</h2>
+  <p style="color:var(--muted); font-size:14px;">Tap your school year to see what's available.</p>
+  <div class="year-grid" id="year-grid"></div>
+</div>
+
+<div id="category-screen" class="hidden card">
+  <button class="back-link" onclick="goToYearScreen()">&larr; Change Year</button>
+  <div class="breadcrumb" id="category-breadcrumb">Step 2 of 2</div>
+  <h2 style="color:var(--primary); margin-top:0;">Choose a Category</h2>
+  <div class="category-grid" id="category-grid"></div>
+</div>
+
+<div id="chapter-screen" class="hidden card">
+  <button class="back-link" onclick="goToCategoryScreen()">&larr; Categories</button>
+  <div class="breadcrumb" id="chapter-breadcrumb">Step 3 of 3</div>
+  <h2 style="color:var(--primary); margin-top:0;">Choose a Chapter</h2>
+  <p style="color:var(--muted); font-size:14px;">Chapters that don't yet have questions are greyed out — we'll add them over time.</p>
+  <div class="chapter-grid" id="chapter-grid"></div>
 </div>
 
 <div id="quiz-screen" class="hidden"></div>
@@ -515,8 +638,56 @@ const QUESTION_BANK = {
   ]
 };
 
+// ===== QUIZ DATA STRUCTURE =====
+// Organizes question banks by Year Group + Category.
+// As new content is added, populate the matching slot here — the UI
+// automatically enables the corresponding buttons.
+
+const QUIZ_DATA = {
+  // General Knowledge — array of banks, each covers a year range.
+  // Years outside any bank's range see GK as disabled.
+  generalKnowledge: [
+    // Placeholder for "General Knowledge years 4 to 7" — to be populated when
+    // the source file is shared. Leave bank empty for now so the UI grays it out.
+    // {
+    //   name: "General Knowledge (Years 4–7)",
+    //   yearRange: [4, 7],
+    //   bank: { one: [], two: [], three: [] }
+    // }
+  ],
+
+  // Prayers — array of banks, each with a year range derived from the file title
+  // (e.g. "Prayers 1 (Years 1 - 3)" → yearRange: [1, 3]). Multiple banks may
+  // match a single year; if so, the user picks which one.
+  prayers: [
+    // To be populated from "Prayers 1" through "Prayers 4" files.
+  ],
+
+  // Chapters — keyed by year, then by chapter number (1–15).
+  // Each entry: { title, bank }. Only populated chapters are clickable.
+  chapters: {
+    6: {
+      8: {
+        title: "Jesus Who Died For Us",
+        bank: QUESTION_BANK
+      }
+    }
+    // Other years/chapters will be added as content is created.
+  }
+};
+
+const TOTAL_CHAPTERS = 15;
+const CHAPTER_TITLES = {
+  // Friendly titles shown on the chapter grid where known.
+  // Add more as chapters are populated.
+  "6-8": "Jesus Who Died For Us"
+};
+
 // ===== STATE =====
 let currentQuiz = null;
+let selectedYear = null;
+let selectedCategory = null;
+let selectedBankSource = null; // { label: "...", bank: { one, two, three } }
 
 // ===== HELPERS =====
 function shuffle(arr) {
@@ -586,23 +757,239 @@ function verdictLabel(v) {
   return v === "good" ? "Well answered" : v === "partial" ? "Partially correct" : "Needs work";
 }
 
+// ===== AVAILABILITY HELPERS =====
+function bankHasQuestions(bank) {
+  if (!bank) return false;
+  return (bank.one && bank.one.length > 0)
+      || (bank.two && bank.two.length > 0)
+      || (bank.three && bank.three.length > 0);
+}
+
+function getGKBanksForYear(year) {
+  return QUIZ_DATA.generalKnowledge.filter(g =>
+    year >= g.yearRange[0] && year <= g.yearRange[1] && bankHasQuestions(g.bank)
+  );
+}
+
+function getPrayerBanksForYear(year) {
+  return QUIZ_DATA.prayers.filter(p =>
+    year >= p.yearRange[0] && year <= p.yearRange[1] && bankHasQuestions(p.bank)
+  );
+}
+
+function getAvailableChaptersForYear(year) {
+  const yearData = QUIZ_DATA.chapters[year] || {};
+  const out = {};
+  for (let ch = 1; ch <= TOTAL_CHAPTERS; ch++) {
+    const entry = yearData[ch];
+    if (entry && bankHasQuestions(entry.bank)) {
+      out[ch] = entry;
+    }
+  }
+  return out;
+}
+
+// ===== SCREEN NAVIGATION =====
+function hideAllScreens() {
+  ["start-screen", "category-screen", "chapter-screen", "quiz-screen", "result-screen"]
+    .forEach(id => document.getElementById(id).classList.add("hidden"));
+}
+
+function setSubtitle(text) {
+  document.getElementById("header-subtitle").textContent = text;
+}
+
+function renderYearScreen() {
+  hideAllScreens();
+  document.getElementById("start-screen").classList.remove("hidden");
+  selectedYear = null;
+  selectedCategory = null;
+  selectedBankSource = null;
+  setSubtitle("Pick your year group to begin");
+
+  const grid = document.getElementById("year-grid");
+  let html = "";
+  for (let y = 1; y <= 12; y++) {
+    html += `
+      <button class="year-btn" onclick="selectYear(${y})">
+        <span class="year-num">${y}</span>
+        <span class="year-label">Year</span>
+      </button>`;
+  }
+  grid.innerHTML = html;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function selectYear(year) {
+  selectedYear = year;
+  renderCategoryScreen();
+}
+
+function goToYearScreen() {
+  renderYearScreen();
+}
+
+function renderCategoryScreen() {
+  hideAllScreens();
+  document.getElementById("category-screen").classList.remove("hidden");
+  setSubtitle(`Year ${selectedYear} — pick a category`);
+  document.getElementById("category-breadcrumb").textContent =
+    `Year ${selectedYear}  ›  Category`;
+
+  const gkBanks = getGKBanksForYear(selectedYear);
+  const prayerBanks = getPrayerBanksForYear(selectedYear);
+  const chapters = getAvailableChaptersForYear(selectedYear);
+
+  const cats = [
+    {
+      key: "gk",
+      title: "General Knowledge",
+      desc: gkBanks.length
+        ? `${gkBanks.length} question set${gkBanks.length > 1 ? "s" : ""} available.`
+        : "Not yet available for this year.",
+      enabled: gkBanks.length > 0,
+      badge: gkBanks.length ? "" : (selectedYear >= 4 && selectedYear <= 7 ? "Coming soon" : "Not for this year")
+    },
+    {
+      key: "prayers",
+      title: "Prayers",
+      desc: prayerBanks.length
+        ? `${prayerBanks.length} prayer set${prayerBanks.length > 1 ? "s" : ""} available.`
+        : "Not yet available for this year.",
+      enabled: prayerBanks.length > 0,
+      badge: prayerBanks.length ? "" : "Coming soon"
+    },
+    {
+      key: "chapters",
+      title: "Chapters",
+      desc: Object.keys(chapters).length
+        ? `${Object.keys(chapters).length} of ${TOTAL_CHAPTERS} chapters available.`
+        : "No chapters added yet for this year.",
+      enabled: Object.keys(chapters).length > 0,
+      badge: Object.keys(chapters).length ? "" : "Coming soon"
+    },
+    {
+      key: "mock",
+      title: "Mock Test",
+      desc: "Combined random test across the whole year. Available once all chapters are added.",
+      enabled: false,
+      badge: "Coming soon"
+    }
+  ];
+
+  let html = "";
+  cats.forEach(c => {
+    const disabledCls = c.enabled ? "" : "disabled";
+    const onClick = c.enabled ? `onclick="selectCategory('${c.key}')"` : "";
+    const badgeCls = c.key === "mock" ? "soon" : "locked";
+    const badgeHtml = c.badge ? `<span class="badge ${badgeCls}">${c.badge}</span>` : "";
+    html += `
+      <button class="category-card ${disabledCls}" ${onClick} ${c.enabled ? "" : "disabled"}>
+        <h3>${c.title}${badgeHtml}</h3>
+        <p>${c.desc}</p>
+      </button>`;
+  });
+  document.getElementById("category-grid").innerHTML = html;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function goToCategoryScreen() {
+  renderCategoryScreen();
+}
+
+function selectCategory(cat) {
+  selectedCategory = cat;
+  if (cat === "chapters") {
+    renderChapterScreen();
+    return;
+  }
+  if (cat === "gk") {
+    const banks = getGKBanksForYear(selectedYear);
+    if (banks.length === 1) {
+      selectedBankSource = { label: banks[0].name || "General Knowledge", bank: banks[0].bank };
+      startQuiz();
+    } else if (banks.length > 1) {
+      // Future: a sub-picker. For now, just take the first.
+      selectedBankSource = { label: banks[0].name || "General Knowledge", bank: banks[0].bank };
+      startQuiz();
+    }
+    return;
+  }
+  if (cat === "prayers") {
+    const banks = getPrayerBanksForYear(selectedYear);
+    if (banks.length === 1) {
+      selectedBankSource = { label: banks[0].name || "Prayers", bank: banks[0].bank };
+      startQuiz();
+    } else if (banks.length > 1) {
+      selectedBankSource = { label: banks[0].name || "Prayers", bank: banks[0].bank };
+      startQuiz();
+    }
+    return;
+  }
+}
+
+function renderChapterScreen() {
+  hideAllScreens();
+  document.getElementById("chapter-screen").classList.remove("hidden");
+  setSubtitle(`Year ${selectedYear} — pick a chapter`);
+  document.getElementById("chapter-breadcrumb").textContent =
+    `Year ${selectedYear}  ›  Chapters`;
+
+  const available = getAvailableChaptersForYear(selectedYear);
+
+  let html = "";
+  for (let ch = 1; ch <= TOTAL_CHAPTERS; ch++) {
+    const entry = available[ch];
+    if (entry) {
+      const title = entry.title || CHAPTER_TITLES[`${selectedYear}-${ch}`] || "";
+      html += `
+        <button class="chapter-btn" onclick="selectChapter(${ch})">
+          <span class="ch-num">Ch. ${ch}</span>
+          <span class="ch-title">${escapeHtml(title)}</span>
+        </button>`;
+    } else {
+      html += `
+        <button class="chapter-btn disabled" disabled title="Not yet available">
+          <span class="ch-num">Ch. ${ch}</span>
+          <span class="ch-title" style="opacity:0.6;">Coming soon</span>
+        </button>`;
+    }
+  }
+  document.getElementById("chapter-grid").innerHTML = html;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function selectChapter(ch) {
+  const entry = QUIZ_DATA.chapters[selectedYear][ch];
+  selectedBankSource = {
+    label: `Year ${selectedYear} · Chapter ${ch} — ${entry.title}`,
+    bank: entry.bank
+  };
+  startQuiz();
+}
+
 // ===== QUIZ FLOW =====
 function startQuiz() {
-  const ones   = pickRandom(QUESTION_BANK.one,   3).map(q => ({...q, marks: 1, type: "one"}));
-  const twos   = pickRandom(QUESTION_BANK.two,   1).map(q => ({...q, marks: 2, type: "two"}));
-  const threes = pickRandom(QUESTION_BANK.three, 1).map(q => ({...q, marks: 3, type: "three"}));
+  if (!selectedBankSource) return;
+  const bank = selectedBankSource.bank;
+  const ones   = pickRandom(bank.one   || [], Math.min(3, (bank.one   || []).length))
+                   .map(q => ({...q, marks: 1, type: "one"}));
+  const twos   = pickRandom(bank.two   || [], Math.min(1, (bank.two   || []).length))
+                   .map(q => ({...q, marks: 2, type: "two"}));
+  const threes = pickRandom(bank.three || [], Math.min(1, (bank.three || []).length))
+                   .map(q => ({...q, marks: 3, type: "three"}));
   currentQuiz = [...ones, ...twos, ...threes];
-
   renderQuiz();
 }
 
 function renderQuiz() {
-  document.getElementById("start-screen").classList.add("hidden");
-  document.getElementById("result-screen").classList.add("hidden");
+  hideAllScreens();
   const screen = document.getElementById("quiz-screen");
   screen.classList.remove("hidden");
+  setSubtitle(selectedBankSource ? selectedBankSource.label : "Quiz");
 
   let html = `<div class="card">
+    <div class="breadcrumb">${escapeHtml(selectedBankSource ? selectedBankSource.label : "")}</div>
     <h2 style="color:var(--primary); margin-top:0;">Quick Test — 5 Questions (Total 8 marks)</h2>
     <p style="color:var(--muted); font-size:14px;">Answer all five questions below. You can be brief — what matters is including the key facts and names from the chapter.</p>
   </div>`;
@@ -646,9 +1033,10 @@ function submitQuiz() {
 }
 
 function renderResults(results) {
-  document.getElementById("quiz-screen").classList.add("hidden");
+  hideAllScreens();
   const screen = document.getElementById("result-screen");
   screen.classList.remove("hidden");
+  setSubtitle("Your results");
 
   const totalMarks = results.reduce((s, r) => s + r.marks, 0);
   const maxMarks   = results.reduce((s, r) => s + r.q.marks, 0);
@@ -712,10 +1100,7 @@ function renderKeywords(r) {
 }
 
 function backToStart() {
-  document.getElementById("result-screen").classList.add("hidden");
-  document.getElementById("quiz-screen").classList.add("hidden");
-  document.getElementById("start-screen").classList.remove("hidden");
-  window.scrollTo({top: 0, behavior: 'smooth'});
+  renderYearScreen();
 }
 
 function escapeHtml(str) {
@@ -723,6 +1108,9 @@ function escapeHtml(str) {
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   })[c]);
 }
+
+// Initialize year selection grid on first paint
+renderYearScreen();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

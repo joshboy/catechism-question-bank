@@ -1,0 +1,17 @@
+# Textbook scans — kept local, not published (copyright)
+*.jpeg
+*.jpg
+*.JPEG
+*.JPG
+*.png
+*.PNG
+*.heic
+*.HEIC
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/

@@ -283,6 +283,113 @@
   }
   .chapter-btn.disabled .ch-num { color: var(--muted); }
 
+  /* Prayers screen */
+  .prayer-section { margin-top: 14px; }
+  .prayer-section-header {
+    width: 100%;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--primary);
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.15s;
+  }
+  .prayer-section-header:hover {
+    border-color: var(--primary);
+    background: #FDFCF7;
+  }
+  .prayer-section-header.action {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+  .prayer-section-header.action:hover {
+    background: #6B0F0F;
+  }
+  .prayer-section-header .caret {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .prayer-section-header.action .caret-info {
+    font-size: 12px;
+    font-weight: normal;
+    opacity: 0.85;
+  }
+  .prayer-list-container {
+    margin-top: 10px;
+    padding-left: 6px;
+    border-left: 3px solid var(--accent);
+  }
+  .prayer-item {
+    margin: 6px 0;
+  }
+  .prayer-item-header {
+    width: 100%;
+    background: #FDFCF7;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text);
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.15s;
+  }
+  .prayer-item-header:hover {
+    border-color: var(--primary);
+    background: #FFF8E1;
+  }
+  .prayer-item-header .caret {
+    font-size: 13px;
+    color: var(--secondary);
+  }
+  .prayer-item-text {
+    background: #FFFCF0;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 14px 16px;
+    margin-top: -2px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  /* Exit button */
+  .exit-row {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .exit-btn {
+    background: none;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    font-family: inherit;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .exit-btn:hover {
+    color: var(--bad);
+    border-color: var(--bad);
+  }
+
   .hidden { display: none; }
 </style>
 </head>
@@ -298,6 +405,9 @@
   <h2 style="color:var(--primary); margin-top:0;">Choose your Year Group</h2>
   <p style="color:var(--muted); font-size:14px;">Tap your school year to see what's available.</p>
   <div class="year-grid" id="year-grid"></div>
+  <div class="exit-row">
+    <button class="exit-btn" onclick="exitApp()">Exit App</button>
+  </div>
 </div>
 
 <div id="category-screen" class="hidden card">
@@ -319,6 +429,30 @@
   <h2 style="color:var(--primary); margin-top:0;">Choose a Chapter</h2>
   <p style="color:var(--muted); font-size:14px;">Chapters that don't yet have questions are greyed out — we'll add them over time.</p>
   <div class="chapter-grid" id="chapter-grid"></div>
+</div>
+
+<div id="prayers-screen" class="hidden card">
+  <div class="nav-bar">
+    <button class="back-link" onclick="goToCategoryScreen()">&larr; Categories</button>
+    <button class="home-link" onclick="goHome()">&#8962; Home</button>
+  </div>
+  <div class="breadcrumb" id="prayers-breadcrumb">Prayers</div>
+  <h2 style="color:var(--primary); margin-top:0;">Prayers</h2>
+
+  <div class="prayer-section">
+    <button class="prayer-section-header" id="prayer-list-toggle" onclick="togglePrayerList()">
+      <span>List of Prayers</span>
+      <span class="caret">&#9656;</span>
+    </button>
+    <div class="prayer-list-container hidden" id="prayer-list-container"></div>
+  </div>
+
+  <div class="prayer-section">
+    <button class="prayer-section-header action" onclick="startPrayersMockTest()">
+      <span>Prayers Mock Test</span>
+      <span class="caret-info" id="mock-info">3 random × 3 marks each</span>
+    </button>
+  </div>
 </div>
 
 <div id="quiz-screen" class="hidden"></div>
@@ -721,11 +855,284 @@ const QUIZ_DATA = {
     }
   ],
 
-  // Prayers — array of banks, each with a year range derived from the file title
-  // (e.g. "Prayers 1 (Years 1 - 3)" → yearRange: [1, 3]). Multiple banks may
-  // match a single year; if so, the user picks which one.
+  // Prayers — flat list of all prayers. Each prayer has its own year range
+  // (from the source file titles). When the user picks Prayers for a year,
+  // every prayer whose yearRange covers that year is shown in the list and
+  // becomes a possible Mock Test question.
+  // Mock Test pattern: 3 random prayers × 3 marks each (configured in
+  // startPrayersMockTest, not via a `pattern` field).
   prayers: [
-    // To be populated from "Prayers 1" through "Prayers 4" files.
+    {
+      name: "The Lord's Prayer",
+      yearRange: [1, 12],
+      text: "Our Father, who art in heaven, hallowed be Thy name, Thy kingdom come, Thy will be done on earth as it is in heaven.\nGive us this day our daily bread, and forgive us our trespasses as we forgive those who trespass against us, and lead us not into temptation, but deliver us from evil. Amen.",
+      quizQuestion: "Write out The Lord's Prayer (Our Father).",
+      keywords: [
+        ["our father"], ["heaven"], ["hallowed"], ["kingdom come", "kingdom"],
+        ["will be done", "thy will"], ["earth"], ["daily bread", "bread"],
+        ["forgive", "trespass"], ["temptation"], ["deliver", "evil"]
+      ]
+    },
+    {
+      name: "Hail Mary",
+      yearRange: [2, 12],
+      text: "Hail Mary, full of grace, the Lord is with thee. Blessed art thou amongst women, and blessed is the fruit of thy womb, Jesus.\nHoly Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.",
+      quizQuestion: "Write out the Hail Mary.",
+      keywords: [
+        ["hail mary"], ["full of grace", "grace"], ["lord"],
+        ["blessed"], ["women"], ["fruit", "womb"], ["jesus"],
+        ["mother of god"], ["sinners"], ["death"]
+      ]
+    },
+    {
+      name: "Prayer before Meals",
+      yearRange: [2, 3],
+      text: "Bless us, O Lord, and these thy gifts, which we are about to receive, from thy bounty, through Christ, Our Lord. Amen.",
+      quizQuestion: "Write the Prayer before Meals.",
+      keywords: [
+        ["bless"], ["lord"], ["gifts"], ["receive"], ["bounty"], ["christ"]
+      ]
+    },
+    {
+      name: "Guardian Angel Prayer",
+      yearRange: [3, 12],
+      text: "Angel of God, my guardian dear, to whom God's love commits me here, ever this day (or night), be at my side, to light and guard, rule and guide.",
+      quizQuestion: "Write the Guardian Angel Prayer.",
+      keywords: [
+        ["angel"], ["guardian"], ["love"], ["side"],
+        ["light"], ["guard"], ["rule"], ["guide"]
+      ]
+    },
+    {
+      name: "Seven Sacraments",
+      yearRange: [3, 12],
+      text: "1. Baptism\n2. Confirmation\n3. Holy Eucharist\n4. Reconciliation\n5. Anointing of the Sick\n6. Holy Orders\n7. Marriage",
+      quizQuestion: "Name the Seven Sacraments.",
+      keywords: [
+        ["baptism"], ["confirmation"],
+        ["eucharist", "holy eucharist", "communion"],
+        ["reconciliation", "confession"],
+        ["anointing", "sick"],
+        ["holy orders"], ["marriage", "matrimony"]
+      ]
+    },
+    {
+      name: "Cardinal Virtues",
+      yearRange: [3, 12],
+      text: "1. Prudence\n2. Justice\n3. Fortitude\n4. Temperance",
+      quizQuestion: "Name the four Cardinal Virtues.",
+      keywords: [
+        ["prudence"], ["justice"], ["fortitude"], ["temperance"]
+      ]
+    },
+    {
+      name: "Theological (Divine) Virtues",
+      yearRange: [3, 12],
+      text: "1. Faith\n2. Hope\n3. Charity (Love)",
+      quizQuestion: "Name the three Theological (Divine) Virtues.",
+      keywords: [
+        ["faith"], ["hope"], ["charity", "love"]
+      ]
+    },
+    {
+      name: "Seven Gifts of the Holy Spirit",
+      yearRange: [3, 12],
+      text: "1. Wisdom\n2. Understanding\n3. Counsel\n4. Knowledge\n5. Fortitude\n6. Piety\n7. Fear of the Lord (Wonder)",
+      quizQuestion: "Name the Seven Gifts of the Holy Spirit.",
+      keywords: [
+        ["wisdom"], ["understanding"], ["counsel"], ["knowledge"],
+        ["fortitude"], ["piety"], ["fear of the lord", "wonder"]
+      ]
+    },
+    {
+      name: "Fatima Prayer",
+      yearRange: [4, 12],
+      text: "O my Jesus, forgive us our sins, save us from the fires of hell, lead all souls to heaven, especially those who are most in need of your mercy.",
+      quizQuestion: "Write the Fatima Prayer.",
+      keywords: [
+        ["jesus"], ["forgive", "sins"], ["fires of hell", "hell"],
+        ["souls"], ["heaven"], ["mercy"]
+      ]
+    },
+    {
+      name: "Regina Caeli (Queen of Heaven)",
+      yearRange: [4, 12],
+      text: "Queen of heaven, rejoice. Alleluia!\nFor he whom you did merit to bear, Alleluia!\nHas risen as he said, Alleluia!\nPray for us to God, Alleluia!\nRejoice and be glad, O Virgin Mary, Alleluia!\nFor the Lord is truly risen. Alleluia!\n\nLet us pray:\nO God, who gave joy to the whole world through the resurrection of Your Son our Lord Jesus Christ, grant that we may obtain through His Virgin Mother, Mary, the joys of everlasting life. Through the same Christ our Lord. Amen.",
+      quizQuestion: "Write the Regina Caeli (Queen of Heaven) prayer.",
+      keywords: [
+        ["queen of heaven"], ["rejoice"], ["alleluia"], ["merit", "bear"],
+        ["risen"], ["pray"], ["virgin mary"], ["lord"]
+      ]
+    },
+    {
+      name: "Hail Holy Queen",
+      yearRange: [4, 12],
+      text: "Hail, Holy Queen, Mother of mercy, hail our life, our sweetness, and our hope, to thee do we cry, poor banished children of Eve, to thee do we send up our sighs, mourning and weeping in this vale of tears. Turn then, most gracious advocate, thine eyes of mercy towards us, and after this, our exile, show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary!",
+      quizQuestion: "Write the Hail Holy Queen prayer.",
+      keywords: [
+        ["holy queen"], ["mother of mercy", "mercy"], ["sweetness"], ["hope"],
+        ["eve"], ["sighs", "mourning", "weeping"], ["vale of tears"],
+        ["advocate"], ["exile"], ["womb"], ["jesus"],
+        ["clement", "loving", "sweet"], ["virgin mary"]
+      ]
+    },
+    {
+      name: "Memorare (Prayer of St Bernard)",
+      yearRange: [4, 12],
+      text: "Remember, O most gracious Virgin Mary, that never was it known that anyone who fled to thy protection, implored thy help, or sought thine intercession was left unaided. Inspired by this confidence, I fly unto thee, O Virgin of virgins, my mother; to thee do I come, before thee I stand, sinful and sorrowful. O Mother of the Word Incarnate, despise not my petitions, but in thy mercy hear and answer me. Amen.",
+      quizQuestion: "Write the Memorare (Prayer of St Bernard).",
+      keywords: [
+        ["remember"], ["virgin mary", "virgin"], ["protection"],
+        ["help"], ["intercession"], ["unaided"], ["confidence"],
+        ["mother"], ["sinful", "sorrowful"], ["word incarnate"],
+        ["petitions"], ["mercy"]
+      ]
+    },
+    {
+      name: "Penitential Prayer (I Confess)",
+      yearRange: [4, 12],
+      text: "I confess to almighty God and to you, my brothers and sisters, that I have greatly sinned in my thoughts and in my words, in what I have done and in what I have failed to do, through my fault, through my fault, through my most grievous fault; therefore, I ask blessed Mary ever-Virgin, all the Angels and Saints, and you, my brothers and sisters, to pray for me to the Lord our God.",
+      quizQuestion: "Write the Penitential Prayer (I Confess).",
+      keywords: [
+        ["confess"], ["almighty god"], ["brothers", "sisters"],
+        ["sinned"], ["thoughts", "words"], ["done", "failed"],
+        ["fault"], ["grievous"], ["blessed mary", "mary"],
+        ["angels", "saints"], ["pray"]
+      ]
+    },
+    {
+      name: "Requisites for a Good Confession",
+      yearRange: [4, 12],
+      text: "1. Recollect committed sins orderly\n2. Repent of them sincerely\n3. Resolve not to repeat sins\n4. Tell the priest all sins, especially the grave ones\n5. Do the penance the priest gives",
+      quizQuestion: "List the Requisites for a Good Confession.",
+      keywords: [
+        ["recollect"], ["repent", "sincerely"],
+        ["resolve", "not to repeat"], ["tell the priest", "priest"],
+        ["penance"]
+      ]
+    },
+    {
+      name: "Requisites for receiving Holy Communion worthily",
+      yearRange: [4, 12],
+      text: "1. Be in the state of grace\n2. Observe the one-hour fast (drinking water does not break the fast)\n3. Be sufficiently devout and prepared",
+      quizQuestion: "List the Requisites for receiving Holy Communion worthily.",
+      keywords: [
+        ["state of grace", "grace"],
+        ["one hour fast", "one-hour fast", "fast", "hour"],
+        ["devout", "prepared"]
+      ]
+    },
+    {
+      name: "Act of Contrition",
+      yearRange: [5, 12],
+      text: "O my God, I am heartily sorry for having offended You and I detest all my sins, because I dread the loss of heaven and the pains of hell, but most of all because they offend you, my God, who are all good and deserving of all my love. I firmly resolve, with the help of your grace, to confess my sins, to do penance and never more to offend you and to be careful to avoid the occasions of sin. Amen.",
+      quizQuestion: "Write the Act of Contrition.",
+      keywords: [
+        ["my god"], ["heartily sorry", "sorry"], ["offended"],
+        ["detest", "sins"], ["loss of heaven", "heaven"],
+        ["pains of hell", "hell"], ["love"],
+        ["resolve"], ["grace"], ["confess"], ["penance"],
+        ["avoid", "occasions of sin"]
+      ]
+    },
+    {
+      name: "Religious Virtues",
+      yearRange: [5, 12],
+      text: "1. Fasting\n2. Prayer\n3. Charity",
+      quizQuestion: "Name the three Religious Virtues.",
+      keywords: [
+        ["fasting"], ["prayer"], ["charity"]
+      ]
+    },
+    {
+      name: "The Ten Commandments",
+      yearRange: [5, 12],
+      text: "1. I am the Lord your God. You shall not have strange gods before me.\n2. You shall not take the name of the Lord your God in vain.\n3. Remember to keep holy the Lord's Day.\n4. Honour your father and your mother.\n5. You shall not kill.\n6. You shall not commit adultery.\n7. You shall not steal.\n8. You shall not bear false witness against your neighbour.\n9. You shall not covet your neighbour's wife.\n10. You shall not covet your neighbour's goods.",
+      quizQuestion: "List the Ten Commandments.",
+      keywords: [
+        ["strange gods", "no other gods"], ["name", "vain"],
+        ["lord s day", "sabbath", "holy"], ["honour", "father", "mother"],
+        ["not kill", "kill"], ["adultery"], ["steal"],
+        ["false witness", "witness"], ["covet", "wife"],
+        ["covet", "goods"]
+      ]
+    },
+    {
+      name: "The Sorrowful Mysteries",
+      yearRange: [6, 12],
+      text: "Tuesday, Friday, and Sundays during Lent\n\n1. The Agony of Jesus in the Garden — Jesus prays in the Garden of Olives and drops of blood break through His skin.\n2. The Scourging at the Pillar — Jesus is tied to a pillar and is cruelly beaten with whips.\n3. The Crowning with Thorns — A crown of thorns is placed upon Jesus' head.\n4. The Carrying of the Cross — Jesus is made to carry His cross to Calvary.\n5. The Crucifixion — Jesus is nailed to the cross and dies for our sins.",
+      quizQuestion: "Name the five Sorrowful Mysteries.",
+      keywords: [
+        ["agony", "garden"], ["scourging", "pillar"],
+        ["crowning", "thorns"], ["carrying", "cross"],
+        ["crucifixion"]
+      ]
+    },
+    {
+      name: "The Glorious Mysteries",
+      yearRange: [6, 12],
+      text: "Wednesdays and Sundays\n\n1. The Resurrection of Jesus from the Dead — Jesus rises from the dead, three days after His death.\n2. The Ascension of Jesus into Heaven — Forty days after His death, Jesus ascends into heaven.\n3. The Descent of the Holy Spirit — Ten days after the Ascension, the Holy Spirit comes to the apostles and the Blessed Mother in the form of fiery tongues.\n4. The Assumption of Mary into Heaven — The Blessed Mother is assumed into heaven.\n5. The Crowning of Mary, Queen of Heaven and Earth — The Blessed Mother is crowned Queen of Heaven and Earth by Jesus, her Son.",
+      quizQuestion: "Name the five Glorious Mysteries.",
+      keywords: [
+        ["resurrection"], ["ascension"], ["descent", "holy spirit"],
+        ["assumption", "mary"], ["crowning", "queen"]
+      ]
+    },
+    {
+      name: "The Seven Spiritual Works of Mercy",
+      yearRange: [7, 12],
+      text: "1. Admonish sinners\n2. Instruct the uninformed\n3. Counsel the doubtful\n4. Comfort the sorrowful\n5. Be patient with those in error\n6. Forgive offenses\n7. Pray for the living and the dead",
+      quizQuestion: "List the Seven Spiritual Works of Mercy.",
+      keywords: [
+        ["admonish", "sinners"], ["instruct", "uninformed"],
+        ["counsel", "doubtful"], ["comfort", "sorrowful"],
+        ["patient", "error"], ["forgive", "offenses"],
+        ["pray", "living", "dead"]
+      ]
+    },
+    {
+      name: "The Greatest Commandment",
+      yearRange: [7, 12],
+      text: "You shall love the Lord your God with all your heart, with all your soul, with all your strength, and with all your mind; and your neighbour as yourself.",
+      quizQuestion: "Write the Greatest Commandment.",
+      keywords: [
+        ["love", "lord"], ["heart"], ["soul"],
+        ["strength"], ["mind"], ["neighbour", "neighbor"],
+        ["yourself"]
+      ]
+    },
+    {
+      name: "Four Destinies of Man",
+      yearRange: [8, 12],
+      text: "1. Death\n2. Judgement\n3. Heaven\n4. Hell",
+      quizQuestion: "Name the Four Destinies of Man.",
+      keywords: [
+        ["death"], ["judgement", "judgment"], ["heaven"], ["hell"]
+      ]
+    },
+    {
+      name: "Six Sins against the Holy Spirit",
+      yearRange: [8, 12],
+      text: "1. Despair that heaven is unattainable\n2. Illusion that I can attain heaven without doing good\n3. Resisting truth knowingly\n4. Envy at the prosperity of others\n5. Obstinacy of sin\n6. Impenitence until last",
+      quizQuestion: "List the Six Sins against the Holy Spirit.",
+      keywords: [
+        ["despair", "unattainable"], ["illusion", "without doing good"],
+        ["resisting truth", "truth"], ["envy", "prosperity"],
+        ["obstinacy"], ["impenitence", "until last"]
+      ]
+    },
+    {
+      name: "The Seven Capital Sins and Corresponding Virtues",
+      yearRange: [4, 7],
+      text: "1. Pride / Humility — Overcoming self-centeredness through dependence on God.\n2. Greed / Generosity — Countering selfish desires with charitable giving.\n3. Lust / Chastity — Cultivating purity and self-control.\n4. Envy / Kindness — Choosing love over resentment of others' blessings.\n5. Gluttony / Temperance — Practising moderation in consumption.\n6. Wrath / Patience — Replacing anger with love and trust.\n7. Sloth / Diligence — Fighting spiritual apathy with purposeful action.",
+      quizQuestion: "List the Seven Capital Sins with their corresponding Virtues.",
+      keywords: [
+        ["pride", "humility"], ["greed", "generosity"],
+        ["lust", "chastity"], ["envy", "kindness"],
+        ["gluttony", "temperance"], ["wrath", "patience"],
+        ["sloth", "diligence"]
+      ]
+    }
   ],
 
   // Chapters — keyed by year, then by chapter number (1–15).
@@ -836,9 +1243,9 @@ function getGKBanksForYear(year) {
   );
 }
 
-function getPrayerBanksForYear(year) {
+function getPrayersForYear(year) {
   return QUIZ_DATA.prayers.filter(p =>
-    year >= p.yearRange[0] && year <= p.yearRange[1] && bankHasQuestions(p.bank)
+    year >= p.yearRange[0] && year <= p.yearRange[1]
   );
 }
 
@@ -856,7 +1263,7 @@ function getAvailableChaptersForYear(year) {
 
 // ===== SCREEN NAVIGATION =====
 function hideAllScreens() {
-  ["start-screen", "category-screen", "chapter-screen", "quiz-screen", "result-screen"]
+  ["start-screen", "category-screen", "chapter-screen", "prayers-screen", "quiz-screen", "result-screen"]
     .forEach(id => document.getElementById(id).classList.add("hidden"));
 }
 
@@ -902,7 +1309,7 @@ function renderCategoryScreen() {
     `Year ${selectedYear}  ›  Category`;
 
   const gkBanks = getGKBanksForYear(selectedYear);
-  const prayerBanks = getPrayerBanksForYear(selectedYear);
+  const prayers = getPrayersForYear(selectedYear);
   const chapters = getAvailableChaptersForYear(selectedYear);
 
   const cats = [
@@ -918,11 +1325,11 @@ function renderCategoryScreen() {
     {
       key: "prayers",
       title: "Prayers",
-      desc: prayerBanks.length
-        ? `${prayerBanks.length} prayer set${prayerBanks.length > 1 ? "s" : ""} available.`
-        : "Not yet available for this year.",
-      enabled: prayerBanks.length > 0,
-      badge: prayerBanks.length ? "" : "Coming soon"
+      desc: prayers.length
+        ? `${prayers.length} prayer${prayers.length > 1 ? "s" : ""} for this year. Browse or take a mock test.`
+        : "No prayers configured for this year.",
+      enabled: prayers.length > 0,
+      badge: prayers.length ? "" : "Coming soon"
     },
     {
       key: "chapters",
@@ -968,6 +1375,23 @@ function goHome() {
   renderYearScreen();
 }
 
+function exitApp() {
+  // iOS standalone PWAs cannot be programmatically closed. Try window.close()
+  // (works in some contexts) and fall back to clear instructions.
+  let closed = false;
+  try { window.close(); closed = true; } catch (e) {}
+  setTimeout(() => {
+    if (!document.hidden) {
+      alert(
+        "To close the app:\n\n" +
+        "iPhone — swipe up from the bottom of the screen and flick the app away.\n\n" +
+        "Android — tap the recent apps button (or swipe up and hold) then swipe the app away.\n\n" +
+        "(Browsers don't let web apps close themselves on iOS.)"
+      );
+    }
+  }, 200);
+}
+
 function hasUnsavedQuizAnswers() {
   const quizScreen = document.getElementById("quiz-screen");
   if (!quizScreen || quizScreen.classList.contains("hidden")) return false;
@@ -988,6 +1412,8 @@ function backFromQuiz() {
   if (!confirmLeaveQuiz()) return;
   if (selectedCategory === "chapters") {
     renderChapterScreen();
+  } else if (selectedCategory === "prayers") {
+    renderPrayersScreen();
   } else {
     renderCategoryScreen();
   }
@@ -1013,15 +1439,7 @@ function selectCategory(cat) {
     return;
   }
   if (cat === "prayers") {
-    const banks = getPrayerBanksForYear(selectedYear);
-    if (banks.length >= 1) {
-      selectedBankSource = {
-        label: banks[0].name || "Prayers",
-        bank: banks[0].bank,
-        pattern: banks[0].pattern
-      };
-      startQuiz();
-    }
+    renderPrayersScreen();
     return;
   }
 }
@@ -1066,6 +1484,101 @@ function selectChapter(ch) {
   startQuiz();
 }
 
+// ===== PRAYERS SCREEN =====
+let currentPrayersForYear = [];
+
+function renderPrayersScreen() {
+  hideAllScreens();
+  document.getElementById("prayers-screen").classList.remove("hidden");
+  setSubtitle(`Year ${selectedYear} — Prayers`);
+  document.getElementById("prayers-breadcrumb").textContent =
+    `Year ${selectedYear}  ›  Prayers`;
+
+  currentPrayersForYear = getPrayersForYear(selectedYear);
+
+  // Build the (collapsed) prayer list
+  const container = document.getElementById("prayer-list-container");
+  let html = "";
+  currentPrayersForYear.forEach((p, i) => {
+    html += `
+      <div class="prayer-item">
+        <button class="prayer-item-header" onclick="togglePrayerText(${i})">
+          <span>${escapeHtml(p.name)}</span>
+          <span class="caret" id="prayer-caret-${i}">&#9656;</span>
+        </button>
+        <div class="prayer-item-text hidden" id="prayer-text-${i}">${escapeHtml(p.text)}</div>
+      </div>`;
+  });
+  if (currentPrayersForYear.length === 0) {
+    html = `<p style="color:var(--muted); padding:8px 0;">No prayers are available for Year ${selectedYear}.</p>`;
+  }
+  container.innerHTML = html;
+
+  // Reset accordion state to collapsed
+  container.classList.add("hidden");
+  const toggleCaret = document.querySelector("#prayer-list-toggle .caret");
+  if (toggleCaret) toggleCaret.innerHTML = "&#9656;";
+
+  // Update mock test info — handle the "fewer than 3 prayers" edge case
+  const info = document.getElementById("mock-info");
+  const count = currentPrayersForYear.length;
+  if (count === 0) {
+    info.textContent = "No prayers available";
+  } else if (count < 3) {
+    info.textContent = `${count} prayer${count > 1 ? "s" : ""} × 3 marks each`;
+  } else {
+    info.textContent = "3 random × 3 marks each";
+  }
+
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function togglePrayerList() {
+  const container = document.getElementById("prayer-list-container");
+  const caret = document.querySelector("#prayer-list-toggle .caret");
+  const expanded = !container.classList.contains("hidden");
+  if (expanded) {
+    container.classList.add("hidden");
+    caret.innerHTML = "&#9656;";
+  } else {
+    container.classList.remove("hidden");
+    caret.innerHTML = "&#9662;";
+  }
+}
+
+function togglePrayerText(i) {
+  const text = document.getElementById("prayer-text-" + i);
+  const caret = document.getElementById("prayer-caret-" + i);
+  if (text.classList.contains("hidden")) {
+    text.classList.remove("hidden");
+    caret.innerHTML = "&#9662;";
+  } else {
+    text.classList.add("hidden");
+    caret.innerHTML = "&#9656;";
+  }
+}
+
+function startPrayersMockTest() {
+  const prayers = getPrayersForYear(selectedYear);
+  if (prayers.length === 0) return;
+
+  // Each prayer becomes a 3-mark question. startQuiz handles the random pick.
+  const questions = prayers.map(p => ({
+    q: p.quizQuestion,
+    model: p.text,
+    keywords: p.keywords
+  }));
+
+  const wantedThree = Math.min(3, questions.length);
+  selectedCategory = "prayers";
+  selectedBankSource = {
+    label: `Year ${selectedYear} · Prayers Mock Test`,
+    bank: { one: [], two: [], three: questions },
+    pattern: { one: 0, two: 0, three: wantedThree }
+  };
+  startQuiz();
+}
+
 // ===== QUIZ FLOW =====
 const DEFAULT_PATTERN = { one: 3, two: 1, three: 1 };
 
@@ -1092,7 +1605,9 @@ function renderQuiz() {
   screen.classList.remove("hidden");
   setSubtitle(selectedBankSource ? selectedBankSource.label : "Quiz");
 
-  const backLabel = selectedCategory === "chapters" ? "Chapters" : "Categories";
+  const backLabel = selectedCategory === "chapters" ? "Chapters"
+                   : selectedCategory === "prayers" ? "Prayers"
+                   : "Categories";
   const numQs = currentQuiz.length;
   const totalMarks = currentQuiz.reduce((s, q) => s + q.marks, 0);
 
@@ -1154,10 +1669,16 @@ function renderResults(results) {
   const maxMarks   = results.reduce((s, r) => s + r.q.marks, 0);
   const pct = Math.round((totalMarks / maxMarks) * 100);
 
+  const resBackFn = selectedCategory === 'chapters' ? 'renderChapterScreen()'
+                  : selectedCategory === 'prayers'  ? 'renderPrayersScreen()'
+                  : 'renderCategoryScreen()';
+  const resBackLabel = selectedCategory === 'chapters' ? 'Chapters'
+                     : selectedCategory === 'prayers'  ? 'Prayers'
+                     : 'Categories';
   let html = `
     <div class="card">
       <div class="nav-bar">
-        <button class="back-link" onclick="${selectedCategory === 'chapters' ? 'renderChapterScreen()' : 'renderCategoryScreen()'}">&larr; ${selectedCategory === 'chapters' ? 'Chapters' : 'Categories'}</button>
+        <button class="back-link" onclick="${resBackFn}">&larr; ${resBackLabel}</button>
         <button class="home-link" onclick="goHome()">&#8962; Home</button>
       </div>
       <div class="breadcrumb">${escapeHtml(selectedBankSource ? selectedBankSource.label : "")}</div>
@@ -1197,8 +1718,12 @@ function renderResults(results) {
       </div>`;
   });
 
-  const pickAnotherLabel = selectedCategory === 'chapters' ? 'Pick Another Chapter' : 'Change Category';
-  const pickAnotherFn    = selectedCategory === 'chapters' ? 'renderChapterScreen()' : 'renderCategoryScreen()';
+  const pickAnotherLabel = selectedCategory === 'chapters' ? 'Pick Another Chapter'
+                         : selectedCategory === 'prayers'  ? 'Back to Prayers'
+                         : 'Change Category';
+  const pickAnotherFn    = selectedCategory === 'chapters' ? 'renderChapterScreen()'
+                         : selectedCategory === 'prayers'  ? 'renderPrayersScreen()'
+                         : 'renderCategoryScreen()';
   html += `
     <div class="actions">
       <button onclick="startQuiz()">Try Another Quiz</button>

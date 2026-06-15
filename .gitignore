@@ -8,6 +8,9 @@
 *.heic
 *.HEIC
 
+# Exceptions: PWA icons must ship
+!icon-*.png
+
 # OS / editor noise
 .DS_Store
 Thumbs.db

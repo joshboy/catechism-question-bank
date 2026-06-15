@@ -2,7 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Catechism Quiz — Lesson 8: Jesus Who Died For Us</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#8B1A1A">
+
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Catechism">
+<meta name="mobile-web-app-capable" content="yes">
 <style>
   :root {
     --primary: #8B1A1A;
@@ -28,7 +38,7 @@
   header {
     background: linear-gradient(135deg, var(--primary), #6B0F0F);
     color: white;
-    padding: 24px 20px;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) 20px 24px;
     text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
@@ -712,6 +722,12 @@ function escapeHtml(str) {
   return str.replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   })[c]);
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
 }
 </script>
 </body>

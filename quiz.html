@@ -368,6 +368,11 @@
     color: var(--text);
   }
 
+  .qbank-q-text {
+    flex: 1;
+    margin-right: 8px;
+  }
+
   /* Exit button */
   .exit-row {
     margin-top: 28px;
@@ -429,6 +434,39 @@
   <h2 style="color:var(--primary); margin-top:0;">Choose a Chapter</h2>
   <p style="color:var(--muted); font-size:14px;">Chapters that don't yet have questions are greyed out — we'll add them over time.</p>
   <div class="chapter-grid" id="chapter-grid"></div>
+</div>
+
+<div id="chapter-options-screen" class="hidden card">
+  <div class="nav-bar">
+    <button class="back-link" onclick="renderChapterScreen()">&larr; Chapters</button>
+    <button class="home-link" onclick="goHome()">&#8962; Home</button>
+  </div>
+  <div class="breadcrumb" id="chapter-options-breadcrumb"></div>
+  <h2 style="color:var(--primary); margin-top:0;" id="chapter-options-title"></h2>
+
+  <div class="prayer-section">
+    <button class="prayer-section-header" onclick="renderChapterQBank()">
+      <span>Question Bank</span>
+      <span class="caret">&#9656;</span>
+    </button>
+  </div>
+  <div class="prayer-section">
+    <button class="prayer-section-header action" onclick="startChapterQuiz()">
+      <span>Quick Test</span>
+      <span class="caret-info">3 × 1 mark + 1 × 2 mark + 1 × 3 mark</span>
+    </button>
+  </div>
+</div>
+
+<div id="chapter-qbank-screen" class="hidden card">
+  <div class="nav-bar">
+    <button class="back-link" onclick="renderChapterOptionsScreen()">&larr; Back</button>
+    <button class="home-link" onclick="goHome()">&#8962; Home</button>
+  </div>
+  <div class="breadcrumb" id="chapter-qbank-breadcrumb"></div>
+  <h2 style="color:var(--primary); margin-top:0;">Question Bank</h2>
+  <p style="color:var(--muted); font-size:14px;">Tap a question to reveal the model answer.</p>
+  <div id="chapter-qbank-content"></div>
 </div>
 
 <div id="prayers-screen" class="hidden card">
@@ -1917,7 +1955,7 @@ function getAvailableChaptersForYear(year) {
 
 // ===== SCREEN NAVIGATION =====
 function hideAllScreens() {
-  ["start-screen", "category-screen", "chapter-screen", "prayers-screen", "quiz-screen", "result-screen"]
+  ["start-screen", "category-screen", "chapter-screen", "chapter-options-screen", "chapter-qbank-screen", "prayers-screen", "quiz-screen", "result-screen"]
     .forEach(id => document.getElementById(id).classList.add("hidden"));
 }
 
@@ -2065,7 +2103,7 @@ function confirmLeaveQuiz() {
 function backFromQuiz() {
   if (!confirmLeaveQuiz()) return;
   if (selectedCategory === "chapters") {
-    renderChapterScreen();
+    renderChapterOptionsScreen();
   } else if (selectedCategory === "prayers") {
     renderPrayersScreen();
   } else {
@@ -2129,13 +2167,89 @@ function renderChapterScreen() {
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
+let selectedChapter = null;
+
 function selectChapter(ch) {
-  const entry = QUIZ_DATA.chapters[selectedYear][ch];
+  selectedChapter = ch;
+  renderChapterOptionsScreen();
+}
+
+function renderChapterOptionsScreen() {
+  const entry = QUIZ_DATA.chapters[selectedYear][selectedChapter];
+  hideAllScreens();
+  document.getElementById("chapter-options-screen").classList.remove("hidden");
+  setSubtitle(`Year ${selectedYear} · Ch. ${selectedChapter}`);
+  document.getElementById("chapter-options-breadcrumb").textContent =
+    `Year ${selectedYear}  ›  Chapters  ›  Ch. ${selectedChapter}`;
+  document.getElementById("chapter-options-title").textContent = entry.title;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function startChapterQuiz() {
+  const entry = QUIZ_DATA.chapters[selectedYear][selectedChapter];
   selectedBankSource = {
-    label: `Year ${selectedYear} · Chapter ${ch} — ${entry.title}`,
+    label: `Year ${selectedYear} · Chapter ${selectedChapter} — ${entry.title}`,
     bank: entry.bank
   };
   startQuiz();
+}
+
+function renderChapterQBank() {
+  const entry = QUIZ_DATA.chapters[selectedYear][selectedChapter];
+  hideAllScreens();
+  document.getElementById("chapter-qbank-screen").classList.remove("hidden");
+  setSubtitle(`Year ${selectedYear} · Ch. ${selectedChapter} — Question Bank`);
+  document.getElementById("chapter-qbank-breadcrumb").textContent =
+    `Year ${selectedYear}  ›  Ch. ${selectedChapter}  ›  Question Bank`;
+
+  const categories = [
+    { key: "one", label: "Short Answer Questions", desc: "1 mark" },
+    { key: "two", label: "Answer in One or Two Sentences", desc: "2 marks" },
+    { key: "three", label: "Answer in Detail", desc: "3 marks" }
+  ];
+
+  let html = "";
+  categories.forEach((cat, ci) => {
+    const questions = entry.bank[cat.key] || [];
+    if (questions.length === 0) return;
+    html += `
+      <div class="prayer-section">
+        <button class="prayer-section-header" onclick="toggleQBankCategory(${ci})">
+          <span>${cat.label} <span style="font-weight:normal; color:var(--muted);">(${questions.length} questions · ${cat.desc})</span></span>
+          <span class="caret" id="qbank-cat-caret-${ci}">&#9656;</span>
+        </button>
+        <div class="prayer-list-container hidden" id="qbank-cat-${ci}">`;
+    questions.forEach((item, qi) => {
+      const refId = `qb-${ci}-${qi}`;
+      html += `
+          <div class="prayer-item">
+            <button class="prayer-item-header" onclick="toggleQBankItem('${refId}')">
+              <span class="qbank-q-text"><strong>Q${qi + 1}.</strong> ${escapeHtml(item.q)}</span>
+              <span class="caret" id="${refId}-caret">&#9656;</span>
+            </button>
+            <div class="prayer-item-text hidden" id="${refId}-text"><strong>Answer:</strong> ${escapeHtml(item.model)}</div>
+          </div>`;
+    });
+    html += `
+        </div>
+      </div>`;
+  });
+  document.getElementById("chapter-qbank-content").innerHTML = html;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function toggleQBankCategory(ci) {
+  const container = document.getElementById(`qbank-cat-${ci}`);
+  const caret = document.getElementById(`qbank-cat-caret-${ci}`);
+  container.classList.toggle("hidden");
+  caret.innerHTML = container.classList.contains("hidden") ? "&#9656;" : "&#9662;";
+}
+
+function toggleQBankItem(refId) {
+  const text = document.getElementById(`${refId}-text`);
+  const caret = document.getElementById(`${refId}-caret`);
+  text.classList.toggle("hidden");
+  caret.innerHTML = text.classList.contains("hidden") ? "&#9656;" : "&#9662;";
 }
 
 // ===== PRAYERS SCREEN =====

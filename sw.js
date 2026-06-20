@@ -1,4 +1,4 @@
-const CACHE = 'catechism-quiz-v5';
+const CACHE = 'catechism-quiz-v6';
 const ASSETS = [
   './quiz.html',
   './manifest.webmanifest',
